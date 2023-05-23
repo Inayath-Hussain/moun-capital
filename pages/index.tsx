@@ -1,118 +1,130 @@
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
+import { useEffect, useRef, useState } from 'react';
+import { BrowserProvider, JsonRpcSigner } from 'ethers';
+import MetaMaskOnBoarding from '@metamask/onboarding';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import EditBar from '@/components/edit';
+import SideBar from '@/components/sidebar';
+import Main from '@/components/main';
+import network from '@/utilities/network'
+import networkJSON from '@/network.json'
+import { IWeb3State, IEdit, Idata } from '@/interfaces';
 
-const inter = Inter({ subsets: ['latin'] })
+
+const initialEdit: IEdit = {
+  trigger: false,
+  listName: '',
+  title: '',
+  description: '',
+  prevTitle: '',
+  id: ''
+}
+
+const initialWeb3State: IWeb3State = {
+  address: null,
+  currentChain: null,
+  signer: null,
+  provider: null,
+  balance: null
+};
+
+const contract_address = '0xdAF06E9F17C7aF4CD781DA3CdfC9338ffab440cD';
 
 export default function Home() {
+  const [web3State, setWeb3State] = useState<IWeb3State>(initialWeb3State);
+  const [edit, setEdit] = useState<IEdit>(initialEdit)
+  const [walletInstalled, setWalletInstalled] = useState(false)
+  const onboarding = useRef<MetaMaskOnBoarding>();
+  const origin = useRef<string>();
+  const [wait, setWait] = useState(false);
+  const getListsRef = useRef<(() => Promise<void>) | null>(null)
+
+  const grabNetwork = async (provider: BrowserProvider) => {
+    return Number((await provider.getNetwork()).chainId)
+  }
+
+  const updateWeb3State = async () => {
+    const { ethereum } = window
+    const provider = new BrowserProvider(ethereum)
+    const currentChain = await grabNetwork(provider)
+    const accounts: JsonRpcSigner[] = await provider.listAccounts()
+    const data: Idata = { address: null, signer: null, balance: null }
+
+    if (accounts.length > 0) {
+      const address = accounts[0].address
+      const balance = Number(await provider.getBalance(address)) / 10 ** 18
+      const signer = await provider.getSigner(address)
+      data.address = address
+      data.signer = signer
+      data.balance = balance
+    }
+
+    setWeb3State({
+      address: data.address,
+      currentChain,
+      provider,
+      signer: data.signer,
+      balance: data.balance
+    })
+
+  }
+
+  const checkChain = async () => {
+    return new Promise(resolve => {
+      if (web3State.currentChain !== networkJSON.chainId) {
+        const { ethereum } = window;
+        ethereum.request({ method: "wallet_addEthereumChain", params: [{ ...network }] }).then(async () => {
+          updateWeb3State().then(async () => { resolve(true) })
+        })
+      }
+      else {
+        resolve(true)
+      }
+    })
+  }
+
+  useEffect(() => {
+    const { ethereum } = window
+    if (ethereum) {
+      setWalletInstalled(true)
+    }
+  }, [])
+
+  const redirect = () => {
+    if (!onboarding.current) {
+      onboarding.current = onboarding.current = new MetaMaskOnBoarding({ forwarderOrigin: origin.current });
+    }
+    onboarding.current?.startOnboarding()
+  }
+
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <>
+      <ToastContainer theme='dark' position='top-left' />
+      <div className='min-h-screen grid grid-cols-main grid-rows-main bg-black'>
+
+        <div className='font-semibold row-start-1 row-end-2 col-span-full bg-primary flex justify-center min-w-full text-white text-sm py-2'>Lorem Ipsum is simply dummy text of the printing</div>
+
+        <SideBar />
+
+        {/* top */}
+        <div className='flex flex-row justify-between border-b-4 border-solid border-border border-x-0 border-t-0 col-start-2 col-end-4 row-start-2 row-end-3'>
+          <div className=' text-lg underline underline-blue underline-offset-4 ml-10 mt-4 text-white'>Section</div>
+
+          <div className='rounded-xl mr-4 mt-2 bg-card flex flex-row justify-around items-center w-48 h-9'>
+            <img src="/wallet.svg" alt="" />
+            <div className='font-medium text-base text-white'>{web3State.balance ? web3State.balance.toString().slice(0, 5) : ''} TBNB</div>
+            <div className='font-semibold rounded-md text-xs w-12 h-5 flex justify-center items-center text-primary bg-secondary'>Tier 1</div>
+          </div>
+
         </div>
+
+        {/* main (TODO LISTS CONTAINER) */}
+        <Main getListsRef={getListsRef} wait={wait} setWait={setWait} contract_address={contract_address} checkChain={checkChain} web3State={web3State} updateWeb3State={updateWeb3State}
+          edit={edit} initialEdit={initialEdit} redirect={redirect} walletInstalled={walletInstalled} setEdit={setEdit} />
+
+        <EditBar getListsRef={getListsRef} initialEdit={initialEdit} setWait={setWait} contract_address={contract_address} checkChain={checkChain} web3State={web3State} edit={edit} setEdit={setEdit} />
+
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    </>
   )
 }

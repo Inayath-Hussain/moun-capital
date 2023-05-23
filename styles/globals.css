@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap');
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -18,10 +20,65 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
+  background: linear-gradient(to bottom,
       transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+      rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
+
+  font-family: 'Poppins', sans-serif;
+  color: #848484;
+  overflow: hidden;
+}
+
+.overflow {
+  overflow-y: scroll;
+}
+
+.overflow::-webkit-scrollbar {
+  width: 0px;
+  /* background-color: #3772FF; */
+}
+
+.overflow::-webkit-scrollbar-thumb {
+  background-color: #A3E3FF;
+}
+
+/* .overflow::-webkit-scrollbar-button {
+  display: none;
+} */
+
+.resize {
+  resize: none;
+}
+
+textarea::-webkit-scrollbar {
+  width: 1px
+}
+
+textarea::-webkit-scrollbar-thumb {
+  background-color: #848484;
+}
+
+.underline-blue {
+  text-decoration-color: #3772FF;
+}
+
+@keyframes slide-in {
+  0% {
+    transform: translateX(100%);
+    border-left: 0;
+  }
+
+  50% {
+    border-left: 0;
+  }
+
+  100% {
+    transform: translateX(0%);
+    border-left: 4px solid #242731;
+  }
+}
+
+/* border-l-4 border-solid border-y-0 border-r-0 border-border */
+.slide-in {
+  animation: slide-in 400ms forwards;
 }
