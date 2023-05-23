@@ -86,6 +86,7 @@ export default function Home() {
   useEffect(() => {
     const { ethereum } = window
     if (ethereum) {
+      updateWeb3State()
       setWalletInstalled(true)
     }
   }, [])

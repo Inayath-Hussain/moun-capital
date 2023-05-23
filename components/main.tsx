@@ -103,7 +103,7 @@ const Main = ({ edit, setEdit, initialEdit, walletInstalled, redirect,
     }, [])
 
     useEffect(() => {
-        const { address, provider } = web3State
+        const { address } = web3State
         const call = async () => {
             await getLists();
         }
