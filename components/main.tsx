@@ -79,6 +79,7 @@ const Main = ({ edit, setEdit, initialEdit, walletInstalled, redirect,
 
         const connect = async () => {
             const provider = new BrowserProvider(ethereum)
+            await provider.send("eth_requestAccounts", [])
             const currentChainId = Number((await provider.getNetwork()).chainId)
             if (currentChainId !== networkJSON.chainId) {
                 await ethereum.request({
