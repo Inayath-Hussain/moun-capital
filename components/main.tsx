@@ -18,8 +18,6 @@ interface IpageProps {
     checkChain: () => Promise<unknown>,
     updateWeb3State: () => Promise<void>,
     contract_address: string,
-    wait: boolean,
-    setWait: Dispatch<SetStateAction<boolean>>,
     getListsRef: MutableRefObject<(() => Promise<void>) | null>
 }
 
@@ -136,7 +134,7 @@ const Main = ({ edit, setEdit, initialEdit, walletInstalled, redirect,
                     })
 
                     await web3State.provider?.waitForTransaction(res.hash).then(async (t) => {
-                        await getLists()
+                        await getLists().then(async () => await updateWeb3State())
                     })
                 })
             } catch (ex) {
@@ -172,7 +170,7 @@ const Main = ({ edit, setEdit, initialEdit, walletInstalled, redirect,
                     await web3State.provider?.waitForTransaction(res.hash).then(async (t) => {
                         const new_todo = newTodo.filter(v => v.listName !== listName)
                         setNewTodo([...new_todo])
-                        await getLists()
+                        await getLists().then(async () => await updateWeb3State())
                     })
                 }
             } catch (ex) {

@@ -1,4 +1,4 @@
-import { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { Dispatch, MutableRefObject, SetStateAction, useState } from "react";
 import { Contract } from "ethers";
 import { toast } from 'react-toastify';
 import ABI from '@/ABI.json';
@@ -10,28 +10,14 @@ interface IpageProps {
     checkChain: () => Promise<unknown>,
     web3State: IWeb3State,
     contract_address: string,
-    setWait: Dispatch<SetStateAction<boolean>>,
     getListsRef: MutableRefObject<(() => Promise<void>) | null>,
-    initialEdit: IEdit
+    initialEdit: IEdit,
+    updateWeb3State: () => Promise<void>,
 }
 
-const EditBar = ({ edit, setEdit, checkChain, contract_address, web3State, getListsRef, initialEdit }: IpageProps) => {
+const EditBar = ({ edit, setEdit, checkChain, contract_address, web3State, getListsRef, initialEdit, updateWeb3State }: IpageProps) => {
 
-    const untill = async () => {
-        if (getListsRef.current !== null) {
-            const contract = new Contract(contract_address, ABI, web3State.provider)
-            const list = await contract.getTodos(web3State.address)
-            for (let li in list) {
-                if (li[0] === edit.listName && li[1].length > 0) {
-
-                } else {
-                    toast('Please Wait for 5 seconds and try again')
-                }
-            }
-
-            // await getListsRef.current()
-        }
-    }
+    const [wait, setWait] = useState(false)
 
     const save = async () => {
         const sameChain = await checkChain();
@@ -43,11 +29,12 @@ const EditBar = ({ edit, setEdit, checkChain, contract_address, web3State, getLi
                 web3State.provider && toast.promise(web3State.provider?.waitForTransaction(res.hash), {
                     pending: 'Completing Transaction Please Wait..', success: 'Transaction Completed!!'
                 })
-
+                setWait(true)
                 web3State.provider?.waitForTransaction(res.hash).then(async () => {
                     if (getListsRef.current) {
+                        setWait(false)
                         setEdit(initialEdit)
-                        await getListsRef.current()
+                        await getListsRef.current().then(async () => await updateWeb3State())
                     }
                 })
 
@@ -67,7 +54,7 @@ const EditBar = ({ edit, setEdit, checkChain, contract_address, web3State, getLi
             <textarea onChange={(e) => setEdit({ ...edit, description: e.target.value })} value={edit.description} draggable={false} placeholder="Description" className="resize mb-7 py-3 px-4 h-36 w-72 font-semibold text-sm rounded-xl bg-border text-white outline-0"></textarea>
 
             <div className="flex justify-center items-center">
-                <button onClick={save} className="w-24 h-8 rounded-lg gap-2 bg-primary text-sm font-semibold text-white">Save</button>
+                <button disabled={wait} onClick={save} className={`${wait ? 'cursor-wait' : 'cursor-pointer'} w-24 h-8 rounded-lg gap-2 bg-primary text-sm font-semibold text-white`}>Save</button>
             </div>
         </div>
     );

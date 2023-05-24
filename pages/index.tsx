@@ -119,10 +119,10 @@ export default function Home() {
         </div>
 
         {/* main (TODO LISTS CONTAINER) */}
-        <Main getListsRef={getListsRef} wait={wait} setWait={setWait} contract_address={contract_address} checkChain={checkChain} web3State={web3State} updateWeb3State={updateWeb3State}
+        <Main getListsRef={getListsRef} contract_address={contract_address} checkChain={checkChain} web3State={web3State} updateWeb3State={updateWeb3State}
           edit={edit} initialEdit={initialEdit} redirect={redirect} walletInstalled={walletInstalled} setEdit={setEdit} />
 
-        <EditBar getListsRef={getListsRef} initialEdit={initialEdit} setWait={setWait} contract_address={contract_address} checkChain={checkChain} web3State={web3State} edit={edit} setEdit={setEdit} />
+        <EditBar updateWeb3State={updateWeb3State} getListsRef={getListsRef} initialEdit={initialEdit} contract_address={contract_address} checkChain={checkChain} web3State={web3State} edit={edit} setEdit={setEdit} />
 
       </div>
     </>
